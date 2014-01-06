@@ -1,0 +1,81 @@
+# Path to sensor configuration file. Default value
+# is "sensors.ini" in the working directory.
+sensorconfig = sensors.ini
+
+# Port number for the UDP service that recieves sensor data
+# in LEMP format.
+lemport = 13579
+
+# For extended services an integrated web server is used.
+# There is currently no plan for HTTPS support, so only
+# one port needs to be configured, the HTTP port. Default 8080
+webport = 8080
+
+# The control port is a (very) minimal HTTP port bound to
+# IPv6 localhost (::1) only. This port is used for various
+# service controls, like reloading and stopping the service.
+controlport = 8006
+
+# Control port command key, hased using the plem.tool.Command keygen
+# The default example-key given here is the string "plemkey".
+# Commenting this out leads to a null key, disabling the
+# key-protection of the control port.
+#controlkey = Xm+tT0e6SNTYxhWDcX7vHca84vI=
+
+# Path to directory where the system internal Java-RRD (RRD4J)
+# data file are stored. These files are not intended to be used
+# outside of the plem daemon scope.
+datadir = var/rrd
+
+# Path to directory where graphs are generated.
+# Graphs are stored in image format, and can be used by
+# contexts outside plem, e.g. presented via a web-server.
+graphdir = var/graphs
+
+# Path to directory where exported sensor information files are stored.
+# Some data elements get stored/exported to plain-text files.
+# These files are used by plem internally, but are generally
+# intended to be used for simpler integration to other software.
+exportdir = var/export
+
+# Path to directory where static content for the internal web server
+# is stored. Note that this path will allow directory listings.
+static_web = web/static
+
+# Path to directory where dynamic content for the internal web server
+# is stored. Note that this path will allow directory listings.
+# Dynamic content for plem means Java Server Pages (jsp) files.
+# Files stored under this path will be served as-is, unless they
+# are of type .jsp with valid JSP syntax. Valid JSP files will be
+# parsed on processed on request-time (JIT-compiled).
+static_web = web/jsp
+
+# Delay factor. If packet processing queue is empty
+# wait for queue_wait number of milliseconds
+# Default delay is 10ms. Setting queue_wait to 0 generates 100% CPU load.
+# Note that if the queue gets filled while waiting, all queued packets
+# will get processed before plem "goes to sleep".
+queue_wait = 300
+
+# How often do we perform graph rendering? This time interval is in seconds.
+graph_render_interval = 300
+
+# How many samples are to be stored in data files for daily, weekly and yearly
+# aggregates. Number of samples for averaging is calculated from sample frequency
+# and number of samples per data file
+samples_daily  = 288
+samples_weekly = 336
+samples_yearly = 730
+
+# Default value for maximum amount of missing packets before value is UNKNOWN
+# max_loss can also be set per probe.
+# If both global max_loss and per-probe max_loss are unconfigured, a default
+# default value of 10 will be used.
+max_loss = 5
+
+# Default value for maximum accepted delta/difference to previously logged sensor values
+# Used to cancel/clear obviously wrong values caused by e.g. sensor-glitches.
+# max_delta is also a per-sensor configurable value, value set on sensor overrides global.
+# Specify the valye as a floating-point number, i.e. with decimal point.
+# Default value is 0.0, disabling the delta-check.
+max_delta = 0.0

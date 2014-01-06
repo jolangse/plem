@@ -1,0 +1,37 @@
+; sensors.ini
+;
+; This file configures each known sensor that plem handles
+; The format of the file is structured hiearchcal ini file form
+; and simply lists each sensor with it's associated configurations
+;
+; --------------
+;
+; Example of a minimal sensor configuration, these are the
+; required settings for a single sensor:
+[00018a2fb0]
+displayname = First example sensor
+type = 8
+
+; A complete sensor configuration, these are the available options 
+[0002afd97d]
+; Set a human-friendly name for use when displaying formation:
+displayname = Second example sensor
+; Set the sensor TYPE, using it's integer representation.
+type = 8
+; For now, configured min/max values only cause LOG messages..
+min = -40.0
+max = 100.0
+; How often does this sensor report, in seconds
+interval = 60
+; When interval*max_loss has passed, the sensor is recorded as "unknown"
+; This setting has a global setting in plem.cfg
+max_loss = 10
+; If reported value is more than max_delta away from the 10-minute average
+; for the sensor, the reported value gets dropped, and a log warning recorded
+; Setting the max_delta to 0 (or 0.0) disables the delta-filtering.
+; This setting has a global setting in plem.cfg
+max_delta = 0.0
+; Should graphs be rendered to "closest fit", set autoscale to true
+autoscale = false
+; Should graphs be rendered with a fixed drawn line at value 0.0?
+graph_zero = false
