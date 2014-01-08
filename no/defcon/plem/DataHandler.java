@@ -341,7 +341,16 @@ public class DataHandler
 		log.trace("Processing complete..");
 		return true;
 	}
-        
+
+	public void generateStdGraphs( )  throws FileNotFoundException, IOException
+	{
+		long currentTime = System.currentTimeMillis() / 1000L;
+		this.generateGraph("day", (currentTime - 3600 * 24L), currentTime);
+		this.generateGraph("week", (currentTime - 3600L * 24 * 7), currentTime);
+		this.generateGraph("month", (currentTime - 3600L * 24 * 30), currentTime);
+		this.generateGraph("year", (currentTime - 3600L * 24 * 365), currentTime);
+	}
+
 	public void generateGraph( String name, long start, long end ) throws FileNotFoundException, IOException
 	{
 		log.trace("Graph generation requested");

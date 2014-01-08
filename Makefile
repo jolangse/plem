@@ -7,6 +7,9 @@ JFLAGS = -cp $(CLASSPATH)
 all:
 	javac $(JCFLAGS) no/defcon/plem/Core.java
 
+tool:
+	javac no/defcon/plem/tool/Command.java
+
 run:
 	java $(JFLAGS) no.defcon.plem.Core
 
