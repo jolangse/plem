@@ -109,8 +109,13 @@ public class DataHandler
 	protected boolean checkRange( float value )
 	{
 		log.trace("Testing if sensor value is in range, sensor value is " + Float.toString(value));
-		float cfg_min       = cm.getSensorConfig().getFloat(this.getNodeID() + ".min",    -40.0f);
-		float cfg_max       = cm.getSensorConfig().getFloat(this.getNodeID() + ".max",    100.0f);
+		int type = cm.getSensorConfig().getInt(this.getNodeID() + ".type");
+		float type_min = SensorType.fromInt(type).getMin();
+		float type_max = SensorType.fromInt(type).getMax();
+		log.trace("Range for type " + type + " is min=" + type_min + " max=" + type_max);
+		float cfg_min       = cm.getSensorConfig().getFloat(this.getNodeID() + ".min", type_min);
+		float cfg_max       = cm.getSensorConfig().getFloat(this.getNodeID() + ".max", type_max);
+		log.trace("Range from config is min=" + cfg_min + " max=" + cfg_max);
 		if ( value < cfg_min || value > cfg_max )
 		{
 			return false;

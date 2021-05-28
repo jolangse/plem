@@ -23,5 +23,8 @@
 		If you are the administrator of this plem server, feel free to use this page for your own
 		landing-page design and content.
 	</p>
+	<p>
+		<a href="/naive-demo.jsp">naive-demo.jsp</a>
+	</p>
     </body>
 </html>
