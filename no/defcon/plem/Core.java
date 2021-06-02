@@ -14,6 +14,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.glassfish.jersey.servlet.ServletContainer;
 
 public class Core 
 {
@@ -102,6 +103,12 @@ public class Core
 		staticDataHandler.setContextPath("/static");
 		staticDataHandler.setHandler(staticData);
 
+		// Jersy/JAX-RS?
+		ServletContextHandler restContext = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+		restContext.setContextPath("/api");
+		ServletHolder restServlet = restContext.addServlet(ServletContainer.class, "/*");
+		restServlet.setInitParameter("jersey.config.server.provider.packages", "no.defcon.plem.rest");
+
 		// Create WebAppContext for JSP files.
 		WebAppContext jspContext = new WebAppContext();
 		jspContext.setContextPath("/");
@@ -109,7 +116,7 @@ public class Core
 
 		// Create a handler list to store our static, jsp and servlet context handlers.
 		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { cacheDataHandler, graphDataHandler, staticDataHandler, jspContext });
+		handlers.setHandlers(new Handler[] { cacheDataHandler, graphDataHandler, staticDataHandler, restContext, jspContext });
 
 		s.setHandler(handlers);
                 return s;
