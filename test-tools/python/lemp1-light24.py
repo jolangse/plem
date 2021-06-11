@@ -33,11 +33,18 @@ if __name__ == '__main__':
         exit(1)
 
     sensor_value = float(params.data)
-    if sensor_value < 0 or sensor_value > 4095:
-        print("Barometric values are in range 0 to 4095 (to fit 24bit after x4096)")
+    if sensor_value < 0 or sensor_value > 524287:
+        print("Illumination values are in range 0 to 524287 (19+5bit)")
         exit(1)
 
     if verbose: print("Got value:", sensor_value)
+
+    tmp = int(round(sensor_value*32))
+    lsb =  (tmp & 0xFF)
+    csb =  (tmp & 0xFF00)>>8
+    msb =  (tmp & 0xFF0000)>>16
+
+    print ("MSB: ", msb, " CSB: ", csb, " LSB: ", lsb)
 
     # Protocol Data Unit spec (PDU):
     #  5 bytes preamble: LEMP1
@@ -45,16 +52,9 @@ if __name__ == '__main__':
     #  1 byte 0x01 (type: ID)
     #  1 byte 0x05 (length: 5 bytes)
     #  5 bytes node ID
-    #  1 byte 0x20 (datatype uint16 illumination value)
-    #  1 byte 0x02 (length 2 bytes)
+    #  1 byte 0x42 (datatype uint16 illumination value)
+    #  1 byte 0x32 (length 3 bytes)
     #  2 bytes data (unsigned int 16 bit illumination in lux)
-    tmp = int(round(sensor_value*4096))
-    lsb =  (tmp & 0xFF)
-    csb =  (tmp & 0xFF00)>>8
-    msb =  (tmp & 0xFF0000)>>16
-
-    print ("MSB: ", msb, " CSB: ", csb, " LSB: ", lsb)
-
     values = (
             b'LEMP1',    # Preamble
             1,          # Type: ID
@@ -64,8 +64,8 @@ if __name__ == '__main__':
             int(params.nodeid[4:6], 16),
             int(params.nodeid[6:8], 16),
             int(params.nodeid[8:10],16),
-            16,          # Type: Data type, see SensorType.java
-            3,          # Length: 3 bytes
+            66,          # Type: Data type, see SensorType.java
+            3,          # Length: 2 bytes
             msb,
             csb,
             lsb

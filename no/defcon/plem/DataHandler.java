@@ -27,6 +27,7 @@ public class DataHandler
 	private String dataDir;
 	private String graphDir;
 	private String exportDir;
+	private int defAvgTime;
 
 	private String nodeID;
 
@@ -35,6 +36,8 @@ public class DataHandler
 	public DataHandler ( String nodeID ) throws FileNotFoundException
 	{
 		this.cm = Core.configManager();
+
+		this.defAvgTime = 10;
 
 		dataDir = cm.getPlemConfig().getString("datadir", "var/rrd");
 		log.trace("Asked for datadir, got " + dataDir );
@@ -70,6 +73,11 @@ public class DataHandler
 
 		this.nodeID = nodeID;
 		log.trace("Created RRDHandler for sensor ID " + nodeID + " with NULL data packet");
+	}
+
+	public void setDefAvgTime(int time)
+	{
+		this.defAvgTime = time;
 	}
 
 	public String getNodeID() {
@@ -112,14 +120,28 @@ public class DataHandler
 		int type = cm.getSensorConfig().getInt(this.getNodeID() + ".type");
 		float type_min = SensorType.fromInt(type).getMin();
 		float type_max = SensorType.fromInt(type).getMax();
-		log.trace("Range for type " + type + " is min=" + type_min + " max=" + type_max);
+
 		float cfg_min       = cm.getSensorConfig().getFloat(this.getNodeID() + ".min", type_min);
 		float cfg_max       = cm.getSensorConfig().getFloat(this.getNodeID() + ".max", type_max);
-		log.trace("Range from config is min=" + cfg_min + " max=" + cfg_max);
+		log.trace("Range for type is " + type + " min=" + type_min + " max=" + type_max +
+			", config gives min=" + cfg_min + " max=" + cfg_max);
+
 		if ( value < cfg_min || value > cfg_max )
 		{
+			log.debug("Sensor value " + 
+				Float.toString(value) + 
+				" is out of range " + 
+				Float.toString(cfg_min) +
+				" (min) <-> (max) " +
+				Float.toString(cfg_max));
 			return false;
 		}
+		log.debug("Value is OK, " +
+			Float.toString(cfg_min) +
+			" (min) <= " +
+			Float.toString(value) + 
+			" <= (max) " +
+			Float.toString(cfg_max));
 		return true;
 	}
 
@@ -151,6 +173,18 @@ public class DataHandler
 			}
 		}
 		return true;
+	}
+
+	public RrdDb fetchRrdDb ( ) throws FileNotFoundException, IOException
+	{
+		log.debug("Fetching RrdDb for ID " + this.getNodeID());
+
+		File rrdFile = this.getDataFile(this.getNodeID());
+
+		log.trace("Using RRD file at path " + rrdFile.getAbsolutePath());
+		RrdDb rrdDb = new RrdDb( rrdFile.getAbsolutePath() );
+
+		return rrdDb;
 	}
 
 	public File getDataFile(ProtocolData data) throws FileNotFoundException, IOException
@@ -230,7 +264,7 @@ public class DataHandler
 		File rrdFile = new File( dd, this.getNodeID() + ".jrrd" );
 		if ( !rrdFile.exists() )
 		{
-			log.warn("Graph generation for " + this.getNodeID() + " failed, data file does not exist.");
+			log.warn("Data file fetch for " + this.getNodeID() + " failed, data file does not exist.");
 			throw new FileNotFoundException("Data file does not exist: " + rrdFile.getAbsolutePath() );
 		}
 		return rrdFile;
@@ -252,7 +286,11 @@ public class DataHandler
 
 		log.trace("Using RRD file to save data at path " + rrdFile.getAbsolutePath());
 
-		checkRange(data.getValue());
+		if ( !checkRange(data.getValue() ) )
+		{
+			log.warn("Range test for sensor " + data.getNodeID() + " failed. Not storing value.");
+			return false;
+		}
 
 		if ( !checkDelta( data.getValue() ) )
 		{
@@ -430,9 +468,21 @@ public class DataHandler
 		log.trace("Graph file rendered.");
 	}
 
+	public String getName() throws FileNotFoundException, IOException
+	{
+		return cm.getSensorConfig().getString(this.getNodeID() + ".displayname", "Unnamed sensor");
+	}
+
+	public float getLast() throws FileNotFoundException, IOException
+	{
+		// This is not actually the last value
+		// The average of the prev 2 minutes should be close enoug ^^
+		// If that's not the case: revisit this and implement actual LAST value
+		return getAverage( 2 );
+	}
 	public float getAverage() throws FileNotFoundException, IOException
 	{
-		return getAverage( 10 );
+		return getAverage( defAvgTime );
 	}
 
 	public float getAverage( int minutes ) throws FileNotFoundException, IOException
@@ -442,7 +492,7 @@ public class DataHandler
 
 	public float getMax() throws FileNotFoundException, IOException
 	{
-		return getMax( 10 );
+		return getMax( defAvgTime );
 	}
 
 	public float getMax( int minutes ) throws FileNotFoundException, IOException
@@ -452,7 +502,7 @@ public class DataHandler
 
 	public float getMin() throws FileNotFoundException, IOException
 	{
-		return getMin( 10 );
+		return getMin( defAvgTime );
 	}
 
 	public float getMin( int minutes ) throws FileNotFoundException, IOException

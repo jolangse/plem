@@ -33,8 +33,8 @@ if __name__ == '__main__':
         exit(1)
 
     sensor_value = float(params.data)
-    if sensor_value < 0 or sensor_value > 4095:
-        print("Barometric values are in range 0 to 4095 (to fit 24bit after x4096)")
+    if sensor_value < 0 or sensor_value > 65535:
+        print("Illumination values are in range 0 to 65535 (16bit)")
         exit(1)
 
     if verbose: print("Got value:", sensor_value)
@@ -48,13 +48,6 @@ if __name__ == '__main__':
     #  1 byte 0x20 (datatype uint16 illumination value)
     #  1 byte 0x02 (length 2 bytes)
     #  2 bytes data (unsigned int 16 bit illumination in lux)
-    tmp = int(round(sensor_value*4096))
-    lsb =  (tmp & 0xFF)
-    csb =  (tmp & 0xFF00)>>8
-    msb =  (tmp & 0xFF0000)>>16
-
-    print ("MSB: ", msb, " CSB: ", csb, " LSB: ", lsb)
-
     values = (
             b'LEMP1',    # Preamble
             1,          # Type: ID
@@ -64,15 +57,13 @@ if __name__ == '__main__':
             int(params.nodeid[4:6], 16),
             int(params.nodeid[6:8], 16),
             int(params.nodeid[8:10],16),
-            16,          # Type: Data type, see SensorType.java
-            3,          # Length: 3 bytes
-            msb,
-            csb,
-            lsb
+            65,          # Type: Data type, see SensorType.java
+            2,          # Length: 2 bytes
+            int(sensor_value)
             )
 
     # Network-endian: s = struct.Struct('!5sxbb5Bbbh')
-    s = struct.Struct('!5sxbb5BbbBBB')
+    s = struct.Struct('!5sxbb5BbbH')
     packed_data = s.pack(*values)
 
     if verbose: print('PLEM Host      :', PLEM_HOST)

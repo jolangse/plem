@@ -85,6 +85,16 @@ public class LEMP1Data extends ProtocolData
 
 			setValue( val );
 		}
+		else if ( SensorType.fromInt(tp).equals(SensorType.LUMI_8B) )
+		{
+			setType( SensorType.LUMI_8B );
+			if ( len != 1 ) return false;
+
+			short tmp = (short) (data[p++] & 0xFF);
+			float val = (float)tmp;
+
+			setValue( val );
+		}
 		else if ( SensorType.fromInt(tp).equals(SensorType.LUMI_16B) )
 		{
 
@@ -100,13 +110,19 @@ public class LEMP1Data extends ProtocolData
 
 			setValue( val );
 		}
-		else if ( SensorType.fromInt(tp).equals(SensorType.LUMI_8B) )
+		else if ( SensorType.fromInt(tp).equals(SensorType.LUMI_24B) )
 		{
-			setType( SensorType.LUMI_8B );
-			if ( len != 1 ) return false;
 
-			short tmp = (short) (data[p++] & 0xFF);
-			float val = (float)tmp;
+			setType( SensorType.LUMI_24B );
+
+			if ( len != 3 ) return false;
+
+			int tmp;
+			tmp  = (int) ( (data[p++] & 0xFF)<<16 );
+			tmp |= (int) ( (data[p++] & 0xFF)<<8 );
+			tmp |= (char) (data[p++] & 0xFF);
+
+			float val = ((float)tmp)/32.0f;
 
 			setValue( val );
 		}

@@ -33,8 +33,8 @@ if __name__ == '__main__':
         exit(1)
 
     sensor_value = float(params.data)
-    if sensor_value < 0 or sensor_value > 65535:
-        print("Illumination values are in range 0 to 65535 (16bit)")
+    if sensor_value < 0 or sensor_value > 255:
+        print("Illumination values are in range 0 to 255 (8bit)")
         exit(1)
 
     if verbose: print("Got value:", sensor_value)
@@ -58,12 +58,12 @@ if __name__ == '__main__':
             int(params.nodeid[6:8], 16),
             int(params.nodeid[8:10],16),
             64,          # Type: Data type, see SensorType.java
-            2,          # Length: 2 bytes
-            int(sensor_value)
+            1,          # Length: 1 byte
+            int(round(sensor_value))
             )
 
     # Network-endian: s = struct.Struct('!5sxbb5Bbbh')
-    s = struct.Struct('!5sxbb5BbbH')
+    s = struct.Struct('!5sxbb5BbbB')
     packed_data = s.pack(*values)
 
     if verbose: print('PLEM Host      :', PLEM_HOST)
