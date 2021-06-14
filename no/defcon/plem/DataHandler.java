@@ -72,7 +72,7 @@ public class DataHandler
 		log.trace("Data directories exist..");
 
 		this.nodeID = nodeID;
-		log.trace("Created RRDHandler for sensor ID " + nodeID + " with NULL data packet");
+		log.trace("Created DataHandler for sensor ID " + nodeID);
 	}
 
 	public void setDefAvgTime(int time)
@@ -429,6 +429,8 @@ public class DataHandler
 		graphDef.setTimeSpan(start, end);
 
 		graphDef.setAltAutoscale( cm.getSensorConfig().getBoolean(this.getNodeID() + ".autoscale", false ));
+
+		graphDef.setLogarithmic( cm.getSensorConfig().getBoolean(this.getNodeID() + ".logscale", false ));
 
 		// TODO: Get graph size info from configuration
 		graphDef.setWidth(600);
