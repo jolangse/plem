@@ -55,6 +55,8 @@ JCFLAGS = -Xlint:unchecked -cp $(CLASSPATH)
 
 JFLAGS = -cp $(CLASSPATH)
 
+TARVER = v1.0-dev-$(shell date "+%Y%m%d-%H%M")
+
 all:
 	javac $(JCFLAGS) no/defcon/plem/Core.java
 
@@ -66,6 +68,27 @@ tool:
 
 run:
 	java $(JFLAGS) no.defcon.plem.Core
+
+jar:
+	echo "Main-Class: no.defcon.plem.Core" > Manifest.txt
+	@/bin/echo -en "Class-Path: " >> Manifest.txt
+	@/bin/echo $(CLASSPATH) | sed 's/:/\n  /g' >> Manifest.txt
+	jar cfm plem.jar Manifest.txt \
+		no/defcon/plem/*class \
+		no/defcon/plem/jetty/*.class \
+		no/defcon/plem/rest/*class \
+		no/defcon/plem/tool/*.class 
+
+tar:
+	tar zcvf plem-$(TARVER).tar.gz \
+		--transform 's+^+plem-$(TARVER)/+' \
+		--exclude=var/rrd/* \
+		--exclude=var/graphs/* \
+		--exclude=var/export/* \
+		plem.jar \
+		plem.cfg-example sensors.ini-example simplelogger.properties-example \
+		web/ test-tools/ var/rrd/ var/graphs/ var/export/ 
+	tar zcvf plem-deps-$(TARVER).tar.gz --transform 's+^+plem-$(TARVER)/+' lib/
 
 clean:
 	$(RM) no/defcon/plem/*.class no/defcon/plem/jetty/*.class no/defcon/plem/tool/*.class

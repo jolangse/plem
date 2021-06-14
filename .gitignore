@@ -1,0 +1,10 @@
+*.swp
+*.class
+plem.cfg
+sensors.ini
+simplelogger.properties
+var/
+lib/
+Manifest.txt
+plem*jar
+plem*.tar.gz
