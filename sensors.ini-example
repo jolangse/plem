@@ -1,7 +1,7 @@
 ; sensors.ini
 ;
 ; This file configures each known sensor that plem handles
-; The format of the file is structured hiearchcal ini file form
+; The format of the file is structured hierarchical ini file form
 ; and simply lists each sensor with it's associated configurations
 ;
 ; --------------
@@ -9,29 +9,108 @@
 ; Example of a minimal sensor configuration, these are the
 ; required settings for a single sensor:
 [00018a2fb0]
-displayname = First example sensor
+displayname = First example temperature sensor
 type = 8
 
-; A complete sensor configuration, these are the available options 
+; A complete sensor configuration, with all the available options 
 [0002afd97d]
+; - Required/base settings -
 ; Set a human-friendly name for use when displaying formation:
-displayname = Second example sensor
+displayname = Second example temperature sensor
+;
 ; Set the sensor TYPE, using it's integer representation.
 type = 8
-; For now, configured min/max values only cause LOG messages..
-min = -40.0
-max = 100.0
-; How often does this sensor report, in seconds
-interval = 60
-; When interval*max_loss has passed, the sensor is recorded as "unknown"
-; This setting has a global setting in plem.cfg
-max_loss = 10
+;
+; - Data control settings -
+; Min/max set the minimum and maximum accepted values.
+; Received sensor data outside of this range will be discarded.
+; Each sensor type has default min/max, this example overrides both
+min = -20.0
+max = 60.0
+;
 ; If reported value is more than max_delta away from the 10-minute average
 ; for the sensor, the reported value gets dropped, and a log warning recorded
 ; Setting the max_delta to 0 (or 0.0) disables the delta-filtering.
 ; This setting has a global setting in plem.cfg
 max_delta = 0.0
-; Should graphs be rendered to "closest fit", set autoscale to true
-autoscale = false
+;
+; - WIP: Monitoring/reliability settings - 
+; How often should this sensor report, in seconds
+interval = 60
+;
+; When interval*max_loss has passed, the sensor is recorded as "unknown"
+; This setting has a global setting in plem.cfg
+max_loss = 10
+;
+; - Settings for RrdGraph rendered graphs -
 ; Should graphs be rendered with a fixed drawn line at value 0.0?
 graph_zero = false
+;
+; Should rendered graphs be "closest fit", set autoscale to true
+autoscale = false
+;
+; Rendered graphs can be linear, or logarithmic. To generate logarithmic
+; graphs, set logscale to true. Using logscale=true makes sense for sensors
+; that have logarithmic bevhaviour, such as Lux-sensors.
+logscale = false
+
+; --------------
+; Next, a list of valid sensor/data types, with their default min/max:
+; --------------
+; 
+;; Type 7, Generic integer temperature
+;; Sensor sends 8 bit unsigned containing integer temperature
+;[b57c34f80f]
+;type = 7
+;displayname = Generic integer temperature
+;min = 0.0
+;max = 255.0
+;
+;; Type 8, DS18S20 temperature sensor
+;; Sensor sends 16 bit signed data containing int(float temperature*16)
+;[b57c34f803]
+;type = 8
+;displayname = DS18S20 temperature sensor
+;min = -40.0
+;max = 155.0
+;
+;; Type 16, Barometric pressure (generic)
+;; Sensor sends 24 bit data containing int(float pressure*4096)
+;; based on barometric pressure in hectopascal
+;[b57c34f800]
+;type = 16
+;displayname = Barometric pressure
+;min = 800.0
+;max = 1500.0
+;
+;; Type 32, Relative humidity (generic)
+;; Sensor sends 8 bit data containing percent relative humidity
+;[b57c34f806]
+;type = 32
+;displayname = Test AHT20 Humidity
+;min = 0.0
+;max = 100.0
+;
+;; Type 64, Light level in percent (generic)
+;; Sensor sends 8 bit data containing a 0-100 percent relative light level
+;[b57c34f808]
+;type = 64
+;displayname = LDR photodetector, percent light level
+;min = 0.0
+;max = 100.0
+;
+;; Type 65, Integer light level (generic)
+;; Sensor sends 16 bit data containing a 0-64k integer light level
+;[b57c34f809]
+;type = 65
+;displayname = Brightness sensor
+;min = 0.0
+;max = 65000
+;
+;; Type 66, Illumination in lux (generic)
+;; Sensor sends 24 bit data containing int(float luxlevel*32)
+;[b57c34f807]
+;type = 66
+;displayname = Light level in Lux
+;min = 0.0
+;max = 65000.0
