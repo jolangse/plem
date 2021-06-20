@@ -61,7 +61,11 @@ all:
 	javac $(JCFLAGS) no/defcon/plem/Core.java
 
 api:
-	javac $(JCFLAGS) no/defcon/plem/rest/ApiTest.java no/defcon/plem/rest/ApiCore.java
+	javac $(JCFLAGS) \
+		no/defcon/plem/rest/ApiTest.java \
+		no/defcon/plem/rest/ApiCore.java \
+		no/defcon/plem/rest/NotFoundMapper.java \
+		no/defcon/plem/rest/NumberFormatExMapper.java
 
 tool:
 	javac no/defcon/plem/tool/Command.java

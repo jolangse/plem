@@ -1,5 +1,6 @@
 package no.defcon.plem.rest;
 
+import java.lang.NumberFormatException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
@@ -17,8 +18,8 @@ import javax.ws.rs.core.GenericEntity;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+//import java.util.Map;
+//import java.util.HashMap;
 
 import java.util.Set;
 import java.io.File;
@@ -91,18 +92,16 @@ public class ApiTest {
 		return "yes";
 	}
 
-
-
 	// Sensors are starting to become candidates for moving to ApiCore,
 	// missing things afaik are:
-	//  * Data dumping
-	//  * Exception/error handling
+	//  * Data dumping - fixed, for Avg, Min and Max
+	//  * Exception/error handling - Somewhat fixed using Mappers for FNF and NF
 	@GET
 	@Path("/sensors")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Response p_sensors() 
 	{
-		List<String> sensors = new ArrayList<>();
+		SensorListMsh sensorsMsh = new SensorListMsh();
 
 		for ( String sensorID : sensorList )
 		{
@@ -111,11 +110,11 @@ public class ApiTest {
 			File nameFile = new File ( sensorDir, "name" );
 			if ( nameFile.exists() )
 			{
-				sensors.add(sensorID);
+				sensorsMsh.add(sensorID);
 			}
-		}	
-		GenericEntity<List<String>> mEntity = new GenericEntity<List<String>>(sensors) {};
-		return Response.ok(mEntity).build();
+		}
+
+		return Response.ok(sensorsMsh).build();
 	}
 
 	@GET
@@ -123,26 +122,10 @@ public class ApiTest {
 	@Produces(MediaType.APPLICATION_JSON)
 	public DataHandler p_sensor( @PathParam("id") String id,
 			@DefaultValue("1440") @QueryParam("interval") String intervalStr
-		) throws FileNotFoundException
+		) throws FileNotFoundException, NumberFormatException
 	{
-		Integer interval;
-		try { interval = Integer.parseInt(intervalStr); }
-		catch (Exception e)
-		{
-			log.warn("api/sensors/{id} failed to parse time interval");
-			return null;
-		}
-
-		DataHandler h;
-		//try
-		//{
-			h = new DataHandler(id);
-		/*}
-		catch (Exception e)
-		{
-			log.warn("api/sensors/{id} caught exception!");
-			return null; // "Failed.";
-		}*/
+		Integer interval = Integer.parseInt(intervalStr); 
+		DataHandler h = new DataHandler(id);
 		h.setDefAvgTime(interval);
 		return h;
 	}
@@ -150,9 +133,43 @@ public class ApiTest {
 	@GET
 	@Path("/sensors/{id}/data")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response p_sensor_data( @PathParam("id") String id,
+	//public Response p_sensor_data_avg( @PathParam("id") String id,
+	public SensorDataList p_sensor_data_avg( @PathParam("id") String id,
 			@DefaultValue("0") @QueryParam("start") String startStr,
 			@DefaultValue("0") @QueryParam("end") String endStr
+		) throws FileNotFoundException, IOException
+	{
+		return p_sensor_data( id, startStr, endStr, ConsolFun.AVERAGE);
+	}
+
+	@GET
+	@Path("/sensors/{id}/data/min")
+	@Produces(MediaType.APPLICATION_JSON)
+	//public Response p_sensor_data_min( @PathParam("id") String id,
+	public SensorDataList p_sensor_data_min( @PathParam("id") String id,
+			@DefaultValue("0") @QueryParam("start") String startStr,
+			@DefaultValue("0") @QueryParam("end") String endStr
+		) throws FileNotFoundException, IOException
+	{
+		return p_sensor_data( id, startStr, endStr, ConsolFun.MIN);
+	}
+
+	@GET
+	@Path("/sensors/{id}/data/max")
+	@Produces(MediaType.APPLICATION_JSON)
+	//public Response p_sensor_data_max( @PathParam("id") String id,
+	public SensorDataList p_sensor_data_max( @PathParam("id") String id,
+			@DefaultValue("0") @QueryParam("start") String startStr,
+			@DefaultValue("0") @QueryParam("end") String endStr
+		) throws FileNotFoundException, IOException
+	{
+		return p_sensor_data( id, startStr, endStr, ConsolFun.MAX);
+	}
+
+	//public Response p_sensor_data(String id, 
+	public SensorDataList p_sensor_data(String id, 
+			String startStr, String endStr, 
+			ConsolFun consolidation
 		) throws FileNotFoundException, IOException
 	{
 		long start = 0;
@@ -178,13 +195,12 @@ public class ApiTest {
 			end = unixTimeNow;
 		}
 
-		log.trace("API call sensor/"+ id +"/data with start=" + Long.toString(start) + " end=" + Long.toString(end));
+		log.debug("API call sensor/"+ id +"/data with start=" + Long.toString(start) + " end=" + Long.toString(end));
 
 		// Exceptional exception handling, bro
-		DataHandler h;
-		h = new DataHandler(id);
+		DataHandler h = new DataHandler(id);
 		RrdDb rrdDb = h.fetchRrdDb();
-		FetchRequest fetchRequest = rrdDb.createFetchRequest(ConsolFun.AVERAGE, start, end); 
+		FetchRequest fetchRequest = rrdDb.createFetchRequest(consolidation, start, end); 
 		FetchData fetchData = fetchRequest.fetchData();
 		if ( fetchData.getRowCount() < 1 )
 		{
@@ -193,190 +209,37 @@ public class ApiTest {
 		}
 
 		String[] names = fetchData.getDsNames();
-		log.debug("Names in data source: ");	
+		log.trace("Names in data source: ");	
 		for ( int i = 0; i<names.length; i++)
 		{
-			log.debug("  -> " + names[i]);
+			log.trace("  -> " + names[i]);
 		}
 
 		long[] timestamps = fetchData.getTimestamps();
 		double[] values = fetchData.getValues(names[0]);
 
-		List<Map<Long,Double>> set = new ArrayList<>();
+		log.trace("Number of elements in timestamps: " + Integer.toString(timestamps.length));
+		log.trace("Number of elements in values: " + Integer.toString(values.length));
+
+		SensorDataList set = new SensorDataList(
+				h.getNodeID(),
+				h.getCachedType().toInt(),
+				ConsolFun.AVERAGE.toString());
+
 		for ( int i = 0; i<timestamps.length; i++)
 		{
 			Long ts = new Long(timestamps[i]);
 			Double v = new Double(values[i]);
-			HashMap<Long, Double> dsValues = new HashMap<>();
 			if (!v.isNaN())
 			{
-				dsValues.put( ts, v); 
+				SensorDataValue dsValues = new SensorDataValue( ts, v );
 				set.add(dsValues);
 			}
 		}
-		//System.out.println(dsValues);
 
-		log.debug("Number of elements in timestamps: " + Integer.toString(timestamps.length));
-		log.debug("Number of elements in values: " + Integer.toString(values.length));
-		
-		GenericEntity<List<Map<Long, Double>>>mEntity = new GenericEntity<List<Map<Long, Double>>>(set) {};
-		return Response.ok(mEntity).build();
+		log.debug("Returning dataset with " + Integer.toString(set.length()) + " elements.");
+		//return Response.ok(set).build();
+		return set;
 	}
-
-	// I really should investigate a better way to do this, and not copypaste so much bad code.
-	@GET
-	@Path("/sensors/{id}/data/min")
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response p_sensor_data_min( @PathParam("id") String id,
-			@DefaultValue("0") @QueryParam("start") String startStr,
-			@DefaultValue("0") @QueryParam("end") String endStr
-		) throws FileNotFoundException, IOException
-	{
-		long start = 0;
-		long end = 0;
-		try
-		{
-			start = Integer.parseInt(startStr);
-			end = Integer.parseInt(endStr);
-		}
-		catch (Exception e)
-		{
-			log.warn("api/sensors/{id}/data failed to parse start or end");
-			throw new IOException("Failed parsing start and/or end");
-		}
-		long unixTimeNow = System.currentTimeMillis() / 1000L;
-
-		if (start == 0 || start > unixTimeNow )
-		{
-			start = unixTimeNow - 3600;
-		}
-		if (end == 0 || end < start)
-		{
-			end = unixTimeNow;
-		}
-
-		log.trace("API call sensor/"+ id +"/data with start=" + Long.toString(start) + " end=" + Long.toString(end));
-
-		// Exceptional exception handling, bro
-		DataHandler h;
-		h = new DataHandler(id);
-		RrdDb rrdDb = h.fetchRrdDb();
-		FetchRequest fetchRequest = rrdDb.createFetchRequest(ConsolFun.MIN, start, end); 
-		FetchData fetchData = fetchRequest.fetchData();
-		if ( fetchData.getRowCount() < 1 )
-		{
-			log.warn("Tried to get aggregate MIN value for sensor " + id + ", but got no results. ");
-			throw new IOException("No results returned");
-		}
-
-		String[] names = fetchData.getDsNames();
-		log.debug("Names in data source: ");	
-		for ( int i = 0; i<names.length; i++)
-		{
-			log.debug("  -> " + names[i]);
-		}
-
-		long[] timestamps = fetchData.getTimestamps();
-		double[] values = fetchData.getValues(names[0]);
-
-		List<Map<Long,Double>> set = new ArrayList<>();
-		for ( int i = 0; i<timestamps.length; i++)
-		{
-			Long ts = new Long(timestamps[i]);
-			Double v = new Double(values[i]);
-			HashMap<Long, Double> dsValues = new HashMap<>();
-			if (!v.isNaN())
-			{
-				dsValues.put( ts, v); 
-				set.add(dsValues);
-			}
-		}
-		//System.out.println(dsValues);
-
-		log.debug("Number of elements in timestamps: " + Integer.toString(timestamps.length));
-		log.debug("Number of elements in values: " + Integer.toString(values.length));
-		
-		GenericEntity<List<Map<Long, Double>>>mEntity = new GenericEntity<List<Map<Long, Double>>>(set) {};
-		return Response.ok(mEntity).build();
-	}
-
-	// I really should investigate a better way to do this, and not copypaste so much bad code.
-	@GET
-	@Path("/sensors/{id}/data/max")
-	@Produces(MediaType.APPLICATION_JSON)
-	public Response p_sensor_data_max( @PathParam("id") String id,
-			@DefaultValue("0") @QueryParam("start") String startStr,
-			@DefaultValue("0") @QueryParam("end") String endStr
-		) throws FileNotFoundException, IOException
-	{
-		long start = 0;
-		long end = 0;
-		try
-		{
-			start = Integer.parseInt(startStr);
-			end = Integer.parseInt(endStr);
-		}
-		catch (Exception e)
-		{
-			log.warn("api/sensors/{id}/data failed to parse start or end");
-			throw new IOException("Failed parsing start and/or end");
-		}
-		long unixTimeNow = System.currentTimeMillis() / 1000L;
-
-		if (start == 0 || start > unixTimeNow )
-		{
-			start = unixTimeNow - 3600;
-		}
-		if (end == 0 || end < start)
-		{
-			end = unixTimeNow;
-		}
-
-		log.trace("API call sensor/"+ id +"/data with start=" + Long.toString(start) + " end=" + Long.toString(end));
-
-		// Exceptional exception handling, bro
-		DataHandler h;
-		h = new DataHandler(id);
-		RrdDb rrdDb = h.fetchRrdDb();
-		FetchRequest fetchRequest = rrdDb.createFetchRequest(ConsolFun.MAX, start, end); 
-		FetchData fetchData = fetchRequest.fetchData();
-		if ( fetchData.getRowCount() < 1 )
-		{
-			log.warn("Tried to get aggregate MIN value for sensor " + id + ", but got no results. ");
-			throw new IOException("No results returned");
-		}
-
-		String[] names = fetchData.getDsNames();
-		log.debug("Names in data source: ");	
-		for ( int i = 0; i<names.length; i++)
-		{
-			log.debug("  -> " + names[i]);
-		}
-
-		long[] timestamps = fetchData.getTimestamps();
-		double[] values = fetchData.getValues(names[0]);
-
-		List<Map<Long,Double>> set = new ArrayList<>();
-		for ( int i = 0; i<timestamps.length; i++)
-		{
-			Long ts = new Long(timestamps[i]);
-			Double v = new Double(values[i]);
-			HashMap<Long, Double> dsValues = new HashMap<>();
-			if (!v.isNaN())
-			{
-				dsValues.put( ts, v); 
-				set.add(dsValues);
-			}
-		}
-		//System.out.println(dsValues);
-
-		log.debug("Number of elements in timestamps: " + Integer.toString(timestamps.length));
-		log.debug("Number of elements in values: " + Integer.toString(values.length));
-		
-		GenericEntity<List<Map<Long, Double>>>mEntity = new GenericEntity<List<Map<Long, Double>>>(set) {};
-		return Response.ok(mEntity).build();
-	}
-
-
 }
 

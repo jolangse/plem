@@ -1,3 +1,12 @@
+<%-- This example JSP file is scheduled for removal --%>
+<%-- ----------------------------------------------
+     This file implements a simple JSON-response
+     listing all sensors defined in configuration
+     that also has data logged.
+     This feature is now implemented by the 
+     Jetty+Jersey+Jaxon REST API.
+     The replacement URI is /api/sensors
+     ---------------------------------------------- --%>
 <%@page 
 	language="java" 
 	import="java.util.Set"
