@@ -18,8 +18,6 @@ import javax.ws.rs.core.GenericEntity;
 
 import java.util.ArrayList;
 import java.util.List;
-//import java.util.Map;
-//import java.util.HashMap;
 
 import java.util.Set;
 import java.io.File;
@@ -63,13 +61,15 @@ public class ApiTest {
 	}
 
 	@GET
-	// Supporting XML for this example does not work, because the serialiser
-	// does not know what to use as a xml root element.
-	// See https://stackoverflow.com/questions/15618061/a-message-body-writer-for-java-class-java-util-arraylist-and-mime-media-type-t
-	//@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
-	// On the other hand, JSON does not need a root element:
+	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON} )
+	public String root() {
+		return "TL;DR: testing 123";
+	}
+
+	@GET
+	@Path("/hello")
 	@Produces(MediaType.APPLICATION_JSON)
-	public Response root() 
+	public Response hello()
 	{
 		List<String> items = new ArrayList<>();
 		items.add(new String("Hello"));
@@ -83,7 +83,6 @@ public class ApiTest {
 		return Response.ok(mEntity).build();
 	}
 
-
 	@GET
 	@Path("/available")
 	@Produces(MediaType.TEXT_PLAIN)
@@ -92,6 +91,7 @@ public class ApiTest {
 		return "yes";
 	}
 
+	/*
 	// Sensors are starting to become candidates for moving to ApiCore,
 	// missing things afaik are:
 	//  * Data dumping - fixed, for Avg, Min and Max
@@ -117,6 +117,11 @@ public class ApiTest {
 		return Response.ok(sensorsMsh).build();
 	}
 
+	// Supporting XML for this example does not work, because the serialiser
+	// does not know what to use as a xml root element.
+	// See https://stackoverflow.com/questions/15618061/a-message-body-writer-for-java-class-java-util-arraylist-and-mime-media-type-t
+	//@Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+	// On the other hand, JSON does not need a root element:
 	@GET
 	@Path("/sensors/{id}")
 	@Produces(MediaType.APPLICATION_JSON)
@@ -241,5 +246,6 @@ public class ApiTest {
 		//return Response.ok(set).build();
 		return set;
 	}
+	*/
 }
 
