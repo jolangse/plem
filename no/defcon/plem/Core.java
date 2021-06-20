@@ -25,6 +25,7 @@ public class Core
 	private static HouseKeeper houseKeeper;
 	private static Server jettyServer;
 	private static Server controlServer;
+	private static long startTime;
 	
 	protected static LinkedBlockingQueue<ProtocolData> dataQueue;
 	protected static ConfigManager cm;
@@ -164,9 +165,17 @@ public class Core
 		}
 	}
 
+	public static long getUptime()
+	{
+		long timeNow = System.currentTimeMillis() / 1000L;
+		return timeNow - startTime;
+	}
+
 	public static void main(String[] args) throws Exception 
 	{
 		log.info("Starting plem Core.");
+
+		startTime =  System.currentTimeMillis() / 1000L;
 
 		getDataQueue();
 
